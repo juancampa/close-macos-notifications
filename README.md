@@ -4,6 +4,14 @@ A simple Rust program to quickly close all active macOS notifications using Acce
 
 You can use something like [hammerspoon](https://www.hammerspoon.org/) to bind it to a keyboard shortcut.
 
+For example (binds to `cmd + escape`):
+```lua
+function closeNotifications()
+  hs.execute('<path to close-notifications binary>')
+end
+hs.hotkey.bind({"cmd"}, "escape", closeNotifications)
+```
+
 ### Run via Cargo
 To run the tool directly:
 ```bash
