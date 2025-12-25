@@ -8,6 +8,7 @@ use std::error::Error;
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 use core_foundation::base::{CFType, TCFType};
 use log::{debug, info};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
 
 fn find_notification_alerts(elements: &[CFType]) -> Vec<CFType> {
@@ -42,10 +43,8 @@ fn find_notification_alerts(elements: &[CFType]) -> Vec<CFType> {
 }
 
 fn get_notification_center_groups() -> Result<Vec<CFType>> {
-    info!("Scanning for notifications...");
-
     let pid = Platform::get_notification_center_pid()?;
-    debug!("Found NotificationCenter PID: {}", pid);
+    debug!("NotificationCenter PID: {}", pid);
 
     let app_element = Platform::create_app_element(pid)?;
     let app_element_ref = app_element.as_CFTypeRef() as AXUIElementRef;
@@ -81,34 +80,44 @@ fn get_notification_center_groups() -> Result<Vec<CFType>> {
 }
 
 fn close_batch_groups(groups: &[CFType]) -> usize {
-    let mut closed_count = 0;
+    let start = Instant::now();
+    let closed = AtomicUsize::new(0);
 
-    if groups.is_empty() {
-        return 0;
-    }
+    std::thread::scope(|s| {
+        for group in groups.iter().rev() {
+            let group_ptr = group.as_CFTypeRef() as usize;
+            let closed = &closed;
 
-    info!("Closing {} notifications...", groups.len());
+            // Each group runs in a thread since reading and performing actions is blocking and
+            // running everything sequentially can be significantly slower
+            s.spawn(move || {
+                let group = group_ptr as AXUIElementRef;
+                info!(
+                    "Closing notification with {}...",
+                    start.elapsed().as_millis()
+                );
+                let Some(actions) = Platform::get_actions(group) else {
+                    return;
+                };
 
-    for group in groups.iter().rev() {
-        let group_ref = group.as_CFTypeRef() as AXUIElementRef;
-        let actions = match Platform::get_actions(group_ref) {
-            Some(a) => a,
-            None => continue,
-        };
-
-        for action in actions {
-            if action.contains(&format!("Name:{}", ACTION_CLOSE))
-                || action.contains(&format!("Name:{}", ACTION_CLEAR_ALL))
-            {
-                if Platform::perform_action(group_ref, &action) {
-                    closed_count += 1;
-                    break;
+                for action in &actions {
+                    if is_close_action(action) {
+                        if Platform::perform_action(group, action) {
+                            closed.fetch_add(1, Ordering::SeqCst);
+                        }
+                        break;
+                    }
                 }
-            }
+            });
         }
-    }
+    });
 
-    closed_count
+    closed.into_inner()
+}
+
+fn is_close_action(action: &String) -> bool {
+    action.contains(&format!("Name:{}", ACTION_CLOSE))
+        || action.contains(&format!("Name:{}", ACTION_CLEAR_ALL))
 }
 
 fn main() -> Result<()> {
