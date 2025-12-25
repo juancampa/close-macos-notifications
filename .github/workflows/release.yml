@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin, aarch64-apple-darwin
+
+      - name: Build (Universal Binary)
+        run: |
+          cargo build --release --target x86_64-apple-darwin
+          cargo build --release --target aarch64-apple-darwin
+          
+          mkdir -p bin
+          lipo -create \
+            target/x86_64-apple-darwin/release/close-notifications-rust \
+            target/aarch64-apple-darwin/release/close-notifications-rust \
+            -output bin/close-notifications
+            
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bin/close-notifications
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
