@@ -28,8 +28,8 @@ jobs:
           
           mkdir -p bin
           lipo -create \
-            target/x86_64-apple-darwin/release/close-notifications-rust \
-            target/aarch64-apple-darwin/release/close-notifications-rust \
+            target/x86_64-apple-darwin/release/close-notifications \
+            target/aarch64-apple-darwin/release/close-notifications \
             -output bin/close-notifications
             
       - name: Create Release

@@ -1,4 +1,4 @@
-# Close macOS Notifications (Rust)
+# Close macOS Notifications
 
 A simple Rust program to quickly close all active macOS notifications using Accessibility APIs.
 
@@ -15,7 +15,7 @@ Or with debug logging:
 RUST_LOG=debug cargo run --release
 ```
 
-The compiled binary can be found at `target/release/close-notifications-rust`.
+The compiled binary can be found at `target/release/close-notifications`.
 
 ### Test notifications
 

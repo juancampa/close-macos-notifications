@@ -1,7 +1,10 @@
 [package]
-name = "close-macos-notifications"
+name = "close-notifications"
 version = "0.1.0"
 edition = "2024"
+description = "Close all visible macOS notifications"
+license = "MIT"
+authors = ["Juan Campa <juancampa@gmail.com>"]
 
 [dependencies]
 accessibility-sys = "0.2.0"
