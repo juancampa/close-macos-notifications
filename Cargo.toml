@@ -1,0 +1,18 @@
+[package]
+name = "close-macos-notifications"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+accessibility-sys = "0.2.0"
+core-foundation = "0.10.1"
+log = "0.4.29"
+env_logger = { version = "0.11.8", default-features = false, features = ["color", "humantime"] }
+sysinfo = { version = "0.31.0", default-features = false, features = ["system"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
